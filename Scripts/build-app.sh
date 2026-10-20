@@ -18,11 +18,11 @@ fi
 
 mkdir -p "$CONTENTS_DIR/MacOS" "$CONTENTS_DIR/Resources"
 cp "$BUILD_DIR/release/Clippy" "$CONTENTS_DIR/MacOS/Clippy"
-swift "$ROOT_DIR/Scripts/GenerateAppIcon.swift" "$ROOT_DIR/Assets/ClippyAppIconSource.png" "$ICONSET_DIR"
+swift "$ROOT_DIR/Scripts/GenerateAppIcon.swift" "$ROOT_DIR/Assets/menu-logo.png" "$ICONSET_DIR"
 iconutil --convert icns "$ICONSET_DIR" --output "$ICON_PATH"
-rm -f "$CONTENTS_DIR/Resources/AppIcon.icns"
-cp "$ICON_PATH" "$CONTENTS_DIR/Resources/ClippyAppIcon.icns"
-swift "$ROOT_DIR/Scripts/GenerateMenuBarLogo.swift" "$ROOT_DIR/Assets/ClippyAppIconSource.png" "$MENUBAR_LOGO"
+rm -f "$CONTENTS_DIR/Resources/AppIcon.icns" "$CONTENTS_DIR/Resources/ClippyAppIcon.icns"
+cp "$ICON_PATH" "$CONTENTS_DIR/Resources/ClippyBrandIcon.icns"
+swift "$ROOT_DIR/Scripts/GenerateMenuBarLogo.swift" "$ROOT_DIR/Assets/menu-logo.png" "$MENUBAR_LOGO"
 cp "$MENUBAR_LOGO" "$CONTENTS_DIR/Resources/ClippyMenuBar.pdf"
 
 cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
@@ -35,7 +35,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
     <key>CFBundleExecutable</key>
     <string>Clippy</string>
     <key>CFBundleIconFile</key>
-    <string>ClippyAppIcon</string>
+    <string>ClippyBrandIcon</string>
     <key>CFBundleIdentifier</key>
     <string>com.clippy.clipboard</string>
     <key>CFBundleName</key>

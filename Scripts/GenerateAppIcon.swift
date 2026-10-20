@@ -34,7 +34,9 @@ func iconPNG(size: Int) -> Data {
     context.imageInterpolation = .high
 
     let bounds = CGRect(x: 0, y: 0, width: size, height: size)
-    NSColor.white.setFill()
+    // Keep the source's transparent outer area so its shadow and silhouette
+    // remain visible against the macOS Dock and app switcher backgrounds.
+    NSColor.clear.setFill()
     bounds.fill()
     let sourceSize = logo.size
     let scale = min(CGFloat(size) / sourceSize.width, CGFloat(size) / sourceSize.height)

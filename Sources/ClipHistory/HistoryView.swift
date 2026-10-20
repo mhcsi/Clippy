@@ -6,14 +6,24 @@ struct HistoryView: View {
     let onSelect: () -> Void
 
     private let calendar = Calendar.current
-    private let rowHover = Color.white.opacity(0.075)
-    private let separator = Color.white.opacity(0.08)
+    private let rowHover = Color.primary.opacity(0.075)
+    private let separator = Color.primary.opacity(0.08)
 
     private var groupedEntries: [(String, [ClipboardEntry])] {
         let filtered = history.entries.filter { entry in
             let query = history.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
             if let selectedApp = history.selectedSourceAppBundleIdentifier,
                entry.sourceBundleIdentifier != selectedApp { return false }
+            switch history.contentFilter {
+            case .all:
+                break
+            case .photos:
+                guard entry.isImage else { return false }
+            case .texts:
+                guard !entry.isImage, !isLink(entry.text) else { return false }
+            case .links:
+                guard !entry.isImage, isLink(entry.text) else { return false }
+            }
             guard !query.isEmpty else { return true }
             return [entry.isImage ? "Image" : entry.text, entry.sourceAppName ?? ""]
                 .contains { $0.localizedCaseInsensitiveContains(query) }
@@ -31,6 +41,7 @@ struct HistoryView: View {
     var body: some View {
         VStack(spacing: 0) {
             searchBar
+            contentTypeFilters
 
             Rectangle()
                 .fill(separator)
@@ -45,7 +56,7 @@ struct HistoryView: View {
                             Text(label.uppercased())
                                 .font(.system(size: 11, weight: .semibold))
                                 .tracking(0.7)
-                                .foregroundStyle(.white.opacity(0.45))
+                                .foregroundStyle(.secondary)
                                 .padding(.horizontal, 16)
                                 .padding(.top, 15)
                                 .padding(.bottom, 6)
@@ -67,14 +78,12 @@ struct HistoryView: View {
         }
         .background {
             WindowBlurBackground()
-                .overlay(Color.black.opacity(0.24))
                 .allowsHitTesting(false)
         }
-        .foregroundStyle(.white.opacity(0.92))
-        .preferredColorScheme(.dark)
+        .foregroundStyle(Color.primary.opacity(0.92))
         .overlay {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                .stroke(Color.primary.opacity(0.12), lineWidth: 1)
         }
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .frame(minWidth: 650, idealWidth: 880, maxWidth: .infinity,
@@ -86,12 +95,12 @@ struct HistoryView: View {
         HStack(spacing: 14) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 16, weight: .regular))
-                .foregroundStyle(.white.opacity(0.52))
+                .foregroundStyle(.secondary)
 
             TextField("Type to search…", text: $history.searchText)
                 .textFieldStyle(.plain)
                 .font(.system(size: 16))
-                .foregroundStyle(.white.opacity(0.92))
+                .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .layoutPriority(1)
                 .accessibilityLabel("Search clipboard history")
@@ -147,7 +156,7 @@ struct HistoryView: View {
             } label: {
                 Image(systemName: "slider.horizontal.3")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.72))
+                    .foregroundStyle(.secondary)
                     .frame(width: 32, height: 32)
                     .contentShape(Rectangle())
             }
@@ -158,6 +167,36 @@ struct HistoryView: View {
         .padding(.horizontal, 18)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, minHeight: 54)
+    }
+
+    private var contentTypeFilters: some View {
+        HStack(spacing: 7) {
+            ForEach(ClipboardContentFilter.allCases) { filter in
+                Button {
+                    history.contentFilter = filter
+                } label: {
+                    Text(filter.title)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color.primary.opacity(history.contentFilter == filter ? 0.96 : 0.67))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background {
+                            Capsule()
+                                .fill(Color.primary.opacity(history.contentFilter == filter ? 0.19 : 0.08))
+                        }
+                        .overlay {
+                            Capsule()
+                                .stroke(Color.primary.opacity(history.contentFilter == filter ? 0.20 : 0.09), lineWidth: 1)
+                        }
+                }
+                .buttonStyle(.plain)
+                .help("Show \(filter.title.lowercased()) in clipboard history")
+                .accessibilityAddTraits(history.contentFilter == filter ? .isSelected : [])
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 18)
+        .padding(.bottom, 10)
     }
 
     private func menuChoice(_ title: String, selected: Bool) -> some View {
@@ -171,14 +210,14 @@ struct HistoryView: View {
         VStack(spacing: 8) {
             Image(systemName: hasSearch ? "magnifyingglass" : "doc.on.clipboard")
                 .font(.system(size: 22, weight: .regular))
-                .foregroundStyle(.white.opacity(0.34))
+                .foregroundStyle(.secondary)
                 .padding(.bottom, 3)
             Text(hasSearch ? "No matching entries" : (history.isPaused ? "Monitoring is paused" : "Nothing copied yet"))
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.white.opacity(0.82))
+                .foregroundStyle(.primary)
             Text(hasSearch ? "Try a different keyword." : "Copied text and images will appear here.")
                 .font(.system(size: 12))
-                .foregroundStyle(.white.opacity(0.46))
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -196,7 +235,7 @@ struct HistoryView: View {
                         .truncationMode(.tail)
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .foregroundStyle(.white.opacity(0.88))
+                        .foregroundStyle(.primary)
 
                     HStack(spacing: 5) {
                         if let sourceAppName = entry.sourceAppName {
@@ -208,12 +247,12 @@ struct HistoryView: View {
                             .font(.system(size: 11, design: .monospaced))
                     }
                     .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.42))
+                    .foregroundStyle(.secondary)
                 }
 
                 Image(systemName: "doc.on.doc")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.white.opacity(isHovered ? 0.58 : 0))
+                    .foregroundStyle(Color.primary.opacity(isHovered ? 0.58 : 0))
                     .frame(width: 16)
             }
             .padding(.horizontal, 12)
@@ -239,7 +278,7 @@ struct HistoryView: View {
                 .aspectRatio(contentMode: .fill)
                 .frame(width: 42, height: 36)
                 .clipShape(RoundedRectangle(cornerRadius: 5))
-                .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.white.opacity(0.10), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.primary.opacity(0.10), lineWidth: 1))
         } else if let appIcon = sourceApplicationImage(for: entry) {
             Image(nsImage: appIcon)
                 .resizable()
@@ -249,9 +288,9 @@ struct HistoryView: View {
         } else {
             Image(systemName: entry.isImage ? "photo" : "doc.text")
                 .font(.system(size: 13, weight: .regular))
-                .foregroundStyle(.white.opacity(0.62))
+                .foregroundStyle(.secondary)
                 .frame(width: 34, height: 34)
-                .background(Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 7))
+                .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 7))
         }
     }
 
@@ -281,6 +320,17 @@ struct HistoryView: View {
 
     private func firstDate(for entries: [ClipboardEntry]) -> Date {
         entries.first?.copiedAt ?? .distantPast
+    }
+
+    private func isLink(_ text: String) -> Bool {
+        let candidate = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !candidate.isEmpty,
+              !candidate.contains(where: \.isNewline),
+              let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue),
+              let match = detector.firstMatch(in: candidate, range: NSRange(candidate.startIndex..., in: candidate)),
+              match.range == NSRange(candidate.startIndex..., in: candidate),
+              let scheme = match.url?.scheme?.lowercased() else { return false }
+        return ["http", "https", "ftp"].contains(scheme)
     }
 }
 

@@ -33,8 +33,12 @@ guard sourceRendered else { fputs("Could not rasterize Clippy logo\n", stderr); 
 
 var whitePixels = [UInt8](repeating: 0, count: rowBytes * height)
 for offset in stride(from: 0, to: sourcePixels.count, by: 4) {
-    let brightness = max(sourcePixels[offset], max(sourcePixels[offset + 1], sourcePixels[offset + 2]))
-    let alpha = UInt8(255) &- brightness
+    let sourceAlpha = Int(sourcePixels[offset + 3])
+    guard sourceAlpha > 0 else { continue }
+    let premultipliedBrightness = Int(max(sourcePixels[offset], max(sourcePixels[offset + 1], sourcePixels[offset + 2])))
+    let brightness = min(255, premultipliedBrightness * 255 / sourceAlpha)
+    let inkAlpha = 255 - brightness
+    let alpha = UInt8(inkAlpha * sourceAlpha / 255)
     whitePixels[offset] = alpha
     whitePixels[offset + 1] = alpha
     whitePixels[offset + 2] = alpha

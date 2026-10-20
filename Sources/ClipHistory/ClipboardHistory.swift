@@ -10,6 +10,24 @@ enum ClipboardHistorySortOrder: Equatable {
     case firstCopy
 }
 
+enum ClipboardContentFilter: String, CaseIterable, Identifiable {
+    case all
+    case photos
+    case texts
+    case links
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .all: "All"
+        case .photos: "Photos"
+        case .texts: "Texts"
+        case .links: "Links"
+        }
+    }
+}
+
 struct ClipboardSourceApp: Identifiable, Equatable {
     let bundleIdentifier: String
     let name: String
@@ -62,6 +80,7 @@ final class ClipboardHistory: ObservableObject {
     @Published var hoveredEntryID: UUID?
     @Published var sortOrder: ClipboardHistorySortOrder = .lastCopy
     @Published var selectedSourceAppBundleIdentifier: String?
+    @Published var contentFilter: ClipboardContentFilter = .all
 
     private let pasteboard: NSPasteboard
     private let storageURL: URL
