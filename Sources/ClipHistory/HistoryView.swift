@@ -73,6 +73,11 @@ struct HistoryView: View {
                     .padding(.bottom, 8)
                 }
                 .scrollIndicators(.visible)
+                .background {
+                    TransparentScrollViewBackground()
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
             }
 
         }
@@ -347,5 +352,52 @@ private struct WindowBlurBackground: NSViewRepresentable {
         nsView.material = .hudWindow
         nsView.blendingMode = .behindWindow
         nsView.state = .active
+    }
+}
+
+/// Prevents the native scroll view from painting an opaque track over the
+/// translucent window material. Overlay scrollers leave the blurred material
+/// visible behind the thumb in both Light and Dark appearances.
+private struct TransparentScrollViewBackground: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        DispatchQueue.main.async { configureScrollView(for: view) }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async { configureScrollView(for: nsView) }
+    }
+
+    private func configureScrollView(for view: NSView) {
+        var ancestor: NSView? = view
+        var root = view
+        while let current = ancestor {
+            root = current
+            if let scrollView = current as? NSScrollView {
+                applyTransparentStyle(to: scrollView)
+                return
+            }
+            ancestor = current.superview
+        }
+
+        if let scrollView = firstScrollView(in: root) {
+            applyTransparentStyle(to: scrollView)
+        }
+    }
+
+    private func firstScrollView(in view: NSView) -> NSScrollView? {
+        if let scrollView = view as? NSScrollView { return scrollView }
+        for child in view.subviews {
+            if let scrollView = firstScrollView(in: child) { return scrollView }
+        }
+        return nil
+    }
+
+    private func applyTransparentStyle(to scrollView: NSScrollView) {
+        scrollView.drawsBackground = false
+        scrollView.backgroundColor = .clear
+        scrollView.scrollerStyle = .overlay
+        scrollView.verticalScroller?.alphaValue = 0.72
     }
 }

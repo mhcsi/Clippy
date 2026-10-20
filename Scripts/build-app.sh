@@ -55,5 +55,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
 PLIST
 
 printf 'APPL????' > "$CONTENTS_DIR/PkgInfo"
-codesign --force --sign - "$APP_BUNDLE"
+# Keep the designated requirement stable across local rebuilds so macOS TCC
+# permissions (including Accessibility) remain attached to this app identity.
+codesign --force --sign - --requirements '=designated => identifier "com.clippy.clipboard"' "$APP_BUNDLE"
 printf 'Built app: %s\n' "$APP_BUNDLE"
