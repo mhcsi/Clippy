@@ -75,6 +75,7 @@ struct ClipboardEntry: Codable, Identifiable, Equatable {
 @MainActor
 final class ClipboardHistory: ObservableObject {
     @Published private(set) var entries: [ClipboardEntry] = []
+    @Published private(set) var pinnedEntryID: UUID?
     @Published var isPaused = false
     @Published var searchText = ""
     @Published var hoveredEntryID: UUID?
@@ -89,12 +90,42 @@ final class ClipboardHistory: ObservableObject {
     private var lastExternalApplication: (name: String, bundleIdentifier: String)?
     private var lastChangeCount: Int
     private let maximumEntries = 1000
+    private static let pinnedEntryDefaultsKey = "Clippy.pinnedClipboardEntryID"
 
     init(pasteboard: NSPasteboard = .general, storageURL: URL? = nil) {
         self.pasteboard = pasteboard
         self.storageURL = storageURL ?? Self.defaultStorageURL()
         self.lastChangeCount = pasteboard.changeCount
         load()
+        if let savedID = UserDefaults.standard.string(forKey: Self.pinnedEntryDefaultsKey),
+           let id = UUID(uuidString: savedID),
+           entries.contains(where: { $0.id == id }) {
+            pinnedEntryID = id
+        } else {
+            UserDefaults.standard.removeObject(forKey: Self.pinnedEntryDefaultsKey)
+        }
+    }
+
+    var pinnedEntry: ClipboardEntry? {
+        guard let pinnedEntryID else { return nil }
+        return entries.first { $0.id == pinnedEntryID }
+    }
+
+    func isPinned(_ entry: ClipboardEntry) -> Bool {
+        pinnedEntryID == entry.id
+    }
+
+    func togglePin(_ entry: ClipboardEntry) {
+        setPinnedEntryID(pinnedEntryID == entry.id ? nil : entry.id)
+    }
+
+    func delete(_ entry: ClipboardEntry) {
+        guard entries.contains(where: { $0.id == entry.id }) else { return }
+        removeImageFiles(for: entry)
+        entries.removeAll { $0.id == entry.id }
+        if pinnedEntryID == entry.id { setPinnedEntryID(nil) }
+        if hoveredEntryID == entry.id { hoveredEntryID = nil }
+        save()
     }
 
     var sourceApplications: [ClipboardSourceApp] {
@@ -210,6 +241,7 @@ final class ClipboardHistory: ObservableObject {
     func clear() {
         entries.forEach(removeImageFiles(for:))
         entries = []
+        setPinnedEntryID(nil)
         save()
     }
 
@@ -273,6 +305,18 @@ final class ClipboardHistory: ObservableObject {
         let removed = Array(entries.suffix(entries.count - maximumEntries))
         removed.forEach(removeImageFiles(for:))
         entries.removeLast(removed.count)
+        if let pinnedEntryID, removed.contains(where: { $0.id == pinnedEntryID }) {
+            setPinnedEntryID(nil)
+        }
+    }
+
+    private func setPinnedEntryID(_ id: UUID?) {
+        pinnedEntryID = id
+        if let id {
+            UserDefaults.standard.set(id.uuidString, forKey: Self.pinnedEntryDefaultsKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: Self.pinnedEntryDefaultsKey)
+        }
     }
 
     private func removeImageFiles(for entry: ClipboardEntry) {

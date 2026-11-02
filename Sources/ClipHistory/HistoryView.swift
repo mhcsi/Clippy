@@ -158,6 +158,14 @@ struct HistoryView: View {
                 } label: {
                     Label("Filter By App", systemImage: "line.3.horizontal.decrease")
                 }
+
+                Divider()
+
+                Button(role: .destructive) {
+                    confirmClearHistory()
+                } label: {
+                    Label("Clear History…", systemImage: "trash")
+                }
             } label: {
                 Image(systemName: "slider.horizontal.3")
                     .font(.system(size: 15, weight: .medium))
@@ -255,10 +263,18 @@ struct HistoryView: View {
                     .foregroundStyle(.secondary)
                 }
 
-                Image(systemName: "doc.on.doc")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(Color.primary.opacity(isHovered ? 0.58 : 0))
-                    .frame(width: 16)
+                HStack(spacing: 8) {
+                    if history.isPinned(entry) {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Color.accentColor)
+                            .help("Pinned to ⌘⌥2")
+                    }
+                    Image(systemName: "doc.on.doc")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.primary.opacity(isHovered ? 0.58 : 0))
+                        .frame(width: 16)
+                }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 11)
@@ -270,6 +286,19 @@ struct HistoryView: View {
         .onHover { history.hoveredEntryID = $0 ? entry.id : nil }
         .accessibilityLabel(entry.isImage ? "Copy image from \(entry.copiedAt.formatted(date: .abbreviated, time: .shortened))" : "Copy \(entry.text)")
         .help("Copy this entry and close history")
+        .contextMenu {
+            Button(role: .destructive) {
+                history.delete(entry)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+
+            Button {
+                history.togglePin(entry)
+            } label: {
+                Label(history.isPinned(entry) ? "Unpin" : "Pin", systemImage: history.isPinned(entry) ? "pin.slash" : "pin")
+            }
+        }
     }
 
     @ViewBuilder
@@ -321,6 +350,16 @@ struct HistoryView: View {
     private func copy(_ entry: ClipboardEntry) {
         history.recopy(entry)
         onSelect()
+    }
+
+    private func confirmClearHistory() {
+        let alert = NSAlert()
+        alert.messageText = "Clear clipboard history?"
+        alert.informativeText = "This permanently removes all saved entries and images."
+        alert.addButton(withTitle: "Clear History")
+        alert.addButton(withTitle: "Cancel")
+        alert.alertStyle = .warning
+        if alert.runModal() == .alertFirstButtonReturn { history.clear() }
     }
 
     private func firstDate(for entries: [ClipboardEntry]) -> Date {

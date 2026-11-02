@@ -143,7 +143,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch id {
         case 1:
             togglePanel()
-        case 2...9:
+        case 2:
+            if let pinnedEntry = history.pinnedEntry {
+                pasteHistoryEntry(pinnedEntry)
+            } else {
+                pasteHistoryEntry(at: 1)
+            }
+        case 3...9:
             pasteHistoryEntry(at: Int(id - 1))
         default:
             break
@@ -158,9 +164,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func pasteHistoryEntry(at index: Int) {
-        guard history.entries.indices.contains(index),
-              let newestEntry = history.entries.first else { return }
-        let selectedEntry = history.entries[index]
+        guard history.entries.indices.contains(index) else { return }
+        pasteHistoryEntry(history.entries[index])
+    }
+
+    private func pasteHistoryEntry(_ selectedEntry: ClipboardEntry) {
+        guard let newestEntry = history.entries.first else { return }
         history.recopy(selectedEntry)
         hidePanel()
 
