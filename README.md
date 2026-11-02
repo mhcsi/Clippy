@@ -22,6 +22,12 @@ Copy an email, a customer name, and a screenshot from one app. Then switch to an
 - Matches the macOS Light or Dark appearance setting while keeping the translucent glass interface.
 - Avoids consecutive duplicate entries.
 
+## Recent updates
+
+- Added per-item context actions to delete a clip or pin it. A pinned clip stays at the top of the history and is assigned to **⌘⌥2**; without a pin, that shortcut pastes the second newest clip.
+- Fixed quick paste so restoring an older item does not replace the newest clip used by regular **⌘V**. **⌘⌥3–9** continue to paste the correspondingly ranked recent items.
+- Added a clear-history action to the filter menu and improved the translucent scrollbar to match the glass window.
+
 ## Build and run
 
 Requires macOS 13 or newer, Swift 6, and Xcode Command Line Tools.
