@@ -9,8 +9,8 @@ struct HistoryView: View {
     private let rowHover = Color.primary.opacity(0.075)
     private let separator = Color.primary.opacity(0.08)
 
-    private var groupedEntries: [(String, [ClipboardEntry])] {
-        let filtered = history.entries.filter { entry in
+    private var filteredEntries: [ClipboardEntry] {
+        history.entries.filter { entry in
             let query = history.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
             if let selectedApp = history.selectedSourceAppBundleIdentifier,
                entry.sourceBundleIdentifier != selectedApp { return false }
@@ -28,6 +28,17 @@ struct HistoryView: View {
             return [entry.isImage ? "Image" : entry.text, entry.sourceAppName ?? ""]
                 .contains { $0.localizedCaseInsensitiveContains(query) }
         }
+    }
+
+    private var pinnedEntryForDisplay: ClipboardEntry? {
+        guard let pinnedEntry = history.pinnedEntry,
+              filteredEntries.contains(where: { $0.id == pinnedEntry.id }) else { return nil }
+        return pinnedEntry
+    }
+
+    private var groupedEntries: [(String, [ClipboardEntry])] {
+        let pinnedID = pinnedEntryForDisplay?.id
+        let filtered = filteredEntries.filter { $0.id != pinnedID }
         let groups = Dictionary(grouping: filtered) { dayLabel(for: $0.copiedAt) }
         let isNewestFirst = history.sortOrder == .lastCopy
         return groups.map { ($0.key, $0.value.sorted { isNewestFirst ? $0.copiedAt > $1.copiedAt : $0.copiedAt < $1.copiedAt }) }
@@ -47,11 +58,27 @@ struct HistoryView: View {
                 .fill(separator)
                 .frame(height: 1)
 
-            if groupedEntries.isEmpty {
+            if groupedEntries.isEmpty && pinnedEntryForDisplay == nil {
                 emptyState
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
+                        if let pinnedEntry = pinnedEntryForDisplay {
+                            Text("PINNED")
+                                .font(.system(size: 11, weight: .semibold))
+                                .tracking(0.7)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 16)
+                                .padding(.top, 15)
+                                .padding(.bottom, 6)
+
+                            entryRow(pinnedEntry)
+                            Rectangle()
+                                .fill(separator)
+                                .frame(height: 1)
+                                .padding(.leading, 16)
+                        }
+
                         ForEach(groupedEntries, id: \.0) { label, entries in
                             Text(label.uppercased())
                                 .font(.system(size: 11, weight: .semibold))

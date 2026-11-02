@@ -15,7 +15,7 @@ Copy an email, a customer name, and a screenshot from one app. Then switch to an
 - Searches entries and groups them by day.
 - Shows image previews and readable text snippets.
 - Copies any selected item back to the system clipboard with one click.
-- Right-click a history item to delete it or pin one item to **⌘⌥2**.
+- Right-click a history item to delete it or pin one item to the top and to **⌘⌥2**.
 - Clear the full history from the top-right filter menu.
 - Opens and closes from anywhere with **⌘⇧V**.
 - Uses **⌘⌥2** for the pinned item, or the 2nd newest item when nothing is pinned. **⌘⌥3** through **⌘⌥9** paste the correspondingly numbered newest items. Quick paste restores the newest item to the clipboard so regular **⌘V** continues to paste it.
