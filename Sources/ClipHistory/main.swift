@@ -209,7 +209,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Quick paste temporarily puts the chosen history item on the
             // pasteboard. Restore the newest item after the target has handled
             // Cmd+V so a later plain Cmd+V still pastes the latest copy.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [self] in
                 history.recopy(newestEntry)
             }
         }
