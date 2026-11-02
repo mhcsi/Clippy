@@ -158,8 +158,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func pasteHistoryEntry(at index: Int) {
-        guard history.entries.indices.contains(index) else { return }
-        history.recopy(history.entries[index])
+        guard history.entries.indices.contains(index),
+              let newestEntry = history.entries.first else { return }
+        let selectedEntry = history.entries[index]
+        history.recopy(selectedEntry)
         hidePanel()
 
         let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
@@ -177,17 +179,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        guard let target = lastExternalApplication, !target.isTerminated else { return }
+        guard let target = lastExternalApplication, !target.isTerminated else {
+            history.recopy(newestEntry)
+            return
+        }
         target.activate(options: [.activateIgnoringOtherApps, .activateAllWindows])
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
             guard !target.isTerminated,
                   let source = CGEventSource(stateID: .combinedSessionState),
                   let keyDown = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_ANSI_V), keyDown: true),
-                  let keyUp = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_ANSI_V), keyDown: false) else { return }
+                  let keyUp = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_ANSI_V), keyDown: false) else {
+                self.history.recopy(newestEntry)
+                return
+            }
             keyDown.flags = .maskCommand
             keyUp.flags = .maskCommand
             keyDown.postToPid(target.processIdentifier)
             keyUp.postToPid(target.processIdentifier)
+
+            // Quick paste temporarily puts the chosen history item on the
+            // pasteboard. Restore the newest item after the target has handled
+            // Cmd+V so a later plain Cmd+V still pastes the latest copy.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [self] in
+                history.recopy(newestEntry)
+            }
         }
     }
 
